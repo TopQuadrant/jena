@@ -1039,4 +1039,10 @@
     </plugins>
   </reporting>
 
+  <distributionManagement>
+    <repository>
+      <id>tq-all</id>
+      <url>https://nexus.topquadrant.com/repository/tq-all</url>
+    </repository>
+  </distributionManagement>
 </project>
