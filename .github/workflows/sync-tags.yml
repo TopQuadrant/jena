@@ -1,0 +1,32 @@
+## Licensed under the terms of http://www.apache.org/licenses/LICENSE-2.0
+
+name: Sync tags from apache/jena
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Run weekly on Mondays at 06:00 UTC
+    - cron: '0 6 * * 1'
+
+permissions:
+  contents: write
+
+jobs:
+  sync-tags:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Fetch tags from apache/jena
+        run: |
+          git remote add apache https://github.com/apache/jena.git
+          git fetch apache --tags --no-recurse-submodules
+
+      - name: Push new tags to origin
+        run: |
+          # Push all tags, skipping tags that already exist (non-force)
+          git push origin --tags
