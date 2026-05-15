@@ -28,5 +28,14 @@ jobs:
 
       - name: Push new tags to origin
         run: |
-          # Push all tags, skipping tags that already exist (non-force)
-          git push origin --tags
+          # Determine which tags from apache/jena are not yet in origin
+          git fetch origin --tags --no-recurse-submodules
+          new_tags=$(git tag --list | sort > /tmp/all_tags.txt && \
+            git ls-remote --tags origin | awk -F'refs/tags/' '{print $2}' | grep -v '\^{}' | sort > /tmp/origin_tags.txt && \
+            comm -23 /tmp/all_tags.txt /tmp/origin_tags.txt)
+          if [ -z "$new_tags" ]; then
+            echo "No new tags to push."
+          else
+            echo "Pushing new tags: $new_tags"
+            echo "$new_tags" | xargs git push origin
+          fi
