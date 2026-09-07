@@ -361,6 +361,21 @@ public class TransactionManager
             acquireWriterLock(true) ;
         }
         // entry synchronized part
+        DatasetGraphTxn dsgtxn = beginSync$(txnType, originalTxnType, label) ;
+        return dsgtxn;
+    }
+
+    // Create the transaction and record its start (counters, base dataset read lock) under
+    // the same monitor. A transaction finishing concurrently (notifyCommit/notifyAbort are
+    // synchronized) therefore either runs entirely before this transaction exists, or sees it
+    // in activeReaders/activeWriters. Previously noteTxnStart ran after begin$ released the
+    // monitor, so a finishing reader could observe activeReaders==0 && activeWriters==0 and
+    // replay the journal into the base dataset while this transaction, built on the queued
+    // transactions' views, was reading blocks: enactTransaction clears those views' block
+    // journals before JournalControl.replay has written them back, yielding torn index reads
+    // ("Secondary index duplicate") and, once committed, lost data.
+    synchronized
+    private DatasetGraphTxn beginSync$(TxnType txnType, TxnType originalTxnType, String label) {
         DatasetGraphTxn dsgtxn = begin$(txnType, originalTxnType, label) ;
         noteTxnStart(dsgtxn.getTransaction()) ;
         return dsgtxn;
@@ -436,6 +451,10 @@ public class TransactionManager
         return promoteExec$(dsgtxn, originalTxnType);
     }
     
+    // Synchronized for the same reason as beginSync$: noteTxnPromote must not be observable
+    // as "no active transaction" between begin$ and the counter update (READ_COMMITTED promotion
+    // reaches here without going through promoteSync$).
+    synchronized
     private DatasetGraphTxn promoteExec$(DatasetGraphTxn dsgtxn, TxnType originalTxnType) {
         // Use begin$ (not beginInternal)
         // We have the writers lock.
