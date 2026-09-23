@@ -233,25 +233,19 @@ public final class BPTreeNodeMgr extends BPTreePageMgr<BPTreeNode>
         else
             numPtrs = n.getCount()+1 ;
 
+        // Absolute slices: block.getByteBuffer() hands the same ByteBuffer instance to every
+        // concurrent reader of the block, because BlockMgrJournal.getRead and BlockMgrCache.getRead
+        // both return the same Block. Mutating its position and limit here let two readers decoding
+        // the same node tear each other's view and read a garbage child pointer.
         ByteBuffer byteBuffer = block.getByteBuffer() ;
 
         // -- Records area
-        byteBuffer.position(rStart) ;
-        byteBuffer.limit(rStart+recBuffLen) ;
-        ByteBuffer bbr = byteBuffer.slice() ;
-        //bbr.limit(recBuffLen) ;
+        ByteBuffer bbr = byteBuffer.slice(rStart, recBuffLen) ;
         n.setRecordBuffer(new RecordBuffer(bbr, n.getParams().keyFactory, n.getCount())) ;
 
         // -- Pointers area
-        byteBuffer.position(pStart) ;
-        byteBuffer.limit(pStart+ptrBuffLen) ;
-
-        ByteBuffer bbi = byteBuffer.slice() ;
-        //bbi.limit(ptrBuffLen) ;
+        ByteBuffer bbi = byteBuffer.slice(pStart, ptrBuffLen) ;
         n.ptrs = new PtrBuffer(bbi, numPtrs) ;
-
-        // Reset
-        byteBuffer.rewind() ;
     }
 
     static final void formatForRoot(BPTreeNode n, boolean asLeaf)
