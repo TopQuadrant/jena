@@ -233,25 +233,19 @@ public final class BPTreeNodeMgr extends BPTreePageMgr<BPTreeNode>
         else
             numPtrs = n.getCount()+1 ;
 
+        // This buffer is shared: the same Block, and so the same ByteBuffer, is handed to
+        // every transaction that reads it while it sits in a BlockMgrJournal or BlockMgrCache,
+        // and other threads may move its position and limit at any time. Use absolute slices
+        // only; never touch this buffer's position or limit.
         ByteBuffer byteBuffer = block.getByteBuffer() ;
 
         // -- Records area
-        byteBuffer.position(rStart) ;
-        byteBuffer.limit(rStart+recBuffLen) ;
-        ByteBuffer bbr = byteBuffer.slice() ;
-        //bbr.limit(recBuffLen) ;
+        ByteBuffer bbr = byteBuffer.slice(rStart, recBuffLen) ;
         n.setRecordBuffer(new RecordBuffer(bbr, n.getParams().keyFactory, n.getCount())) ;
 
         // -- Pointers area
-        byteBuffer.position(pStart) ;
-        byteBuffer.limit(pStart+ptrBuffLen) ;
-
-        ByteBuffer bbi = byteBuffer.slice() ;
-        //bbi.limit(ptrBuffLen) ;
+        ByteBuffer bbi = byteBuffer.slice(pStart, ptrBuffLen) ;
         n.ptrs = new PtrBuffer(bbi, numPtrs) ;
-
-        // Reset
-        byteBuffer.rewind() ;
     }
 
     static final void formatForRoot(BPTreeNode n, boolean asLeaf)
