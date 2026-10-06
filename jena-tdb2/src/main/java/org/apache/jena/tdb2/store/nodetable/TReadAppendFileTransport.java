@@ -107,5 +107,10 @@ public class TReadAppendFileTransport extends TTransport {
     @Override
     public void checkReadBytesAvailable(long numBytes) throws TTransportException {
     }
+
+    // libthrift 0.25.0
+    @Override
+    public void resetMessageSizeAndConsumedBytes(long newSize) throws TTransportException {
+    }
 }
 
