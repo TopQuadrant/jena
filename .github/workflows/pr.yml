@@ -10,6 +10,7 @@ on:
       - reopened
     branches:
       - 'main'
+      - 'base-jena-*'
       
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -29,7 +30,7 @@ jobs:
       matrix:
         jdk_distribution: ['temurin']
         os: [ubuntu-latest]
-        java_version: ['25']
+        java_version: ['21', '25']
 
     runs-on: ${{ matrix.os }}
 
